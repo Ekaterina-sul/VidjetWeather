@@ -3,119 +3,142 @@
 <head>
     <meta http-equiv="content-type" content="text/html" charset="utf-8" />
     <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.4.1.min.js"></script>
-</head>
-<body>
-    <table id="main">
-        <tr>
-            <td colspan="2"><label id="TownCaption" style="font-size:24pt;"></label></td>
-        </tr>
-        <tr><td colspan="2"><hr /></td></tr>
-        <tr>
-            <td style="padding-right:10px;">
-                <span style="font-size:30pt;">
-                    <span id="HeaderTemp"></span><sup style="font-size:20pt;">°C</sup>
-                </span>
-            </td>
-            <td class="img_block">
-                <img id="WeatherImage" src="./image/undefined.jpg" style="width:100%;height:100%;" />
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2" style="padding-top:10px;">
-                <div>&#128167 Влажность: <span id="HeaderHumidity"></span> %</div>
-                <div>&#19960 Скорость верта: <span id="HeaderWind"></span> м/с</div>
-                <div>Давление: <span id="HeaderPressure"></span> мм. рт. ст.</div>
-            </td>
-        </tr>
-    </table>
-    <div>
-        <p>Выберите город</p>
-        <select id="City" onchange="changeCity();">
-            <option value="Moscow,ru">Москва</option>
-            <option value="Saint Petersburg,ru">Санкт-Петербург</option>
-            <option value="Samara,ru">Самара</option>
-            <option value="Volgograd,ru">Волгоград</option>
-            <option value="Vladivostok,ru">Владивосток</option>
-            <option value="Orel,ru">Орёл</option>
-        </select>
-        <div style="margin-top:20px;">
-            <label id="Output"></label>
-        </div>
-    </div>
-
     <style>
+        #TownCaption {
+            margin: 20px;
+            text-align: center;
+        }
+
         #main {
-            display: table;
+            width: 270px; /* Ширина блока */
+            display: inline-block;
             background: white; /* Цвет фона */
             border: 2px solid grey;
-            padding: 40px;
-            opacity: 0; /*Элемент полностью прозрачный (невидимый)*/
-            transition: 1s; /*Скорость перехода состояния элемента*/
-            animation: show 3s 1; /* Указываем название анимации, её время и количество повторов*/
-            animation-fill-mode: forwards; /* Чтобы элемент оставался в конечном состоянии анимации */
-            animation-delay: 0s; /* Задержка перед началом */
-            
-            }
+            padding: 20px; /* Поля вокруг текста */
+            margin: 20px; /* Отступы вокруг */
+            -webkit-transition: top 1s ease-out 0.5s;
+            -moz-transition: top 1s ease-out 0.5s;
+            -o-transition: top 1s ease-out 0.5s;
+            transition: top 1s ease-out 0.5s;
+        }
 
-            .img_block {
-            display: inline-block;
-            max-width: 184px; /*максимальная ширина*/
-            max-height: 157px; /*max высота картинки */
+        #sidebar {
+        display:inline-block
+        }
+
+        .img_block {
+            /*display: inline-block;*/
+            max-width: 100px; /*максимальная ширина*/
+            padding: 10px;
         }
     </style>
+</head>
+<body>
+    <div id="main">
+        <div id="header" width="100%" style="border-bottom: 1px solid lightgray;">
+            <label id="TownCaption" style="font-size:24pt;margin:unset;"></label>
+        </div>
+        <div style="margin-top:20px;">
+            <div id="TemperatureContainer" style="display:inline-block;vertical-align:top;text-align:right;width:140px;padding-top:10px;font-size:45pt;">
+                <span id="HeaderTemp"></span>
+                <sup style="font-size:20pt;">°C</sup>
+            </div>
+            <div class="img_block" style="display:inline-block;">
+                <img id="WeatherImage" src="./image/undefined.jpg" style="width:100%;" />
+            </div>
+        </div>
+        <div id="sidebar" style="margin-top:20px;">
+            <div> &#128167 <span id="HumidityContainer"> Влажность: <span id="HeaderHumidity"> </span> %</span></div>
+            <div> <img src="./image/v.gif" style="width:20px; height:20px; " /> <span id="WindContainer">Скорость верта: <span id="HeaderWind"> </span> м/с</span></div>
+            <div> <img src="./image/g.gif" style="width:20px; height:20px; " /> <span id="PressureContainer"> Давление: <span id="HeaderPressure"> </span> мм. рт. ст.</span></div>
+        </div>
+    </div>
+    <div style="display:none;">
+        <!--<p> Выберите город</p>-->
+        <select id="City" onchange="changeCity();">
+            <option value="Moscow,ru" selected> Москва</option>
+            <option value="Saint Petersburg,ru"> С.Петербург</option>
+            <option value="Samara,ru"> Самара</option>
+            <option value="Volgograd,ru"> Волгоград</option>
+            <option value="Vladivostok,ru"> Владивосток</option>
+            <option value="Orel,ru"> Орёл</option>
+        </select>
+        <!--<button onclick="toNextCity();">Следующий город</button>
+        <div style="margin-top:20px;">
+            <label id="Output"> </label>
+        </div>-->
+    </div>
     <script>
+        const fadeInterval = 1000;
+        let myInterval = null;
+
         $(document).ready(() => {
             changeCity();
+            myInterval = setInterval(toNextCity, 7000);
         });
 
         function changeCity() {
             let selected = $("#City option:selected");
-            $("#TownCaption").text(selected.text());
             let city = selected.val();
             $.ajax({
                 method: "POST",
                 url: `http://openweathermap.org/data/2.5/weather/?q=${city}&appid=b6907d289e10d714a6e88b30761fae22`,
                 async: false,
                 success: function (result) {
-                    $("#HeaderPressure").text(result.main.pressure);
-                    $("#HeaderHumidity").text(result.main.humidity);
-                    $("#HeaderWind").text(result.wind.speed);
-                    Temperature(result.main.temp);
-                    weatherImage(result.weather[0].icon);
-                    //
-                    $("#Output").text(JSON.stringify(result));
+                    processSuccess(result,selected);
                 },
-                fail: function () {
+                error: function () {
                     resetWeather();
                 }
             });
         }
 
+        function processSuccess(result, Selected) {
+            weatherImage(result.weather[0].icon);
+            animateText($("#header"),$("#TownCaption"), Selected.text());
+            animateText($("#HumidityContainer"),$("#HeaderHumidity"), result.main.humidity);
+            animateText($("#WindContainer"),$("#HeaderWind"), result.wind.speed);
+            animateText($("#PressureContainer"),$("#HeaderPressure"), result.main.pressure);
+            Temperature(result.main.temp);
+            //
+            //$("#Output").text(JSON.stringify(result));
+        }
+
         function Temperature(temp) {
             let result = "";
             let rounded = Math.round(temp);
-            if (+rounded> 0) result = "+";
+            if (+rounded > 0) result = "+";
             result += rounded;
-            $("#HeaderTemp").text(result);
+            animateText($("#TemperatureContainer"),$("#HeaderTemp"), result);
+        }
+
+        function animateText(Container,Selected, Text) {
+            Container.fadeOut(fadeInterval, () => { Selected.text(Text) }).fadeIn(fadeInterval);
         }
 
         function weatherImage(img) {
-            $("#WeatherImage").attr("src", `./image/${img}.gif`);
+            $("#WeatherImage").fadeOut(fadeInterval, () => { $("#WeatherImage").attr("src", `./image/${img}.gif`); }).fadeIn(fadeInterval);
         }
 
         function resetWeather() {
+            $("#TownCaption").text("");
             $("#HeaderPressure").text("");
             $("#HeaderHumidity").text("");
             $("#HeaderWind").text("");
             $("#HeaderTemp").text("");
             weatherImage("undefined");
         }
+
+        function toNextCity() {
+            let Next = $("#City option:selected").prop("selected", false).next();
+            if (Next.is("#City option")) {
+                Next.prop("selected", true).trigger('change');
+            }
+            else {
+                $("#City option:first").prop("selected", true).trigger('change');
+            }
+        }
     </script>
 </body>
 </html>
 <!--appid=b6907d289e10d714a6e88b30761fae22-->
-<!--
-JSON api.openweathermap.org/data/2.5/weather?q=London
-XML api.openweathermap.org/data/2.5/weather?q=London&mode=xml
-HTML api.openweathermap.org/data/2.5/weather?q=London&mode=html
--->
