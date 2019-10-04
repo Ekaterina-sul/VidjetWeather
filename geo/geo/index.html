@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta http-equiv="content-type" content="text/html" charset="utf-8" />
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.4.1.min.js"></script>
+    <style>
+        #header {
+      align="left" width="300";
+        }
+        #TownCaption {
+            margin: 20px;
+            text-align: center;
+            margin-top:20px
+           
+        }
+
+        #main {
+            width: 270px; /* Ширина блока */
+            height: 280px;
+            display: inline-block;
+            background: white; /* Цвет фона */
+            border: 2px solid grey;
+            padding: 20px; /* Поля вокруг текста */
+            margin: 20px; /* Отступы вокруг */
+            -webkit-transition: top 1s ease-out 0.5s;
+            -moz-transition: top 1s ease-out 0.5s;
+            -o-transition: top 1s ease-out 0.5s;
+            transition: top 1s ease-out 0.5s;
+        }
+
+        #sidebar {
+        display:inline-block;
+   }
+
+        .img_block {
+            /*display: inline-block;*/
+            max-width: 100px; /*максимальная ширина*/
+            padding: 10px;
+        }
+        #box {
+            height:10%;
+        }
+        #video{
+          
+            display: inline-block;
+           
+        }
+    </style>
+</head>
+<body>
+    <div id="main">
+        <div id="box">
+            <div id="header">
+
+                <span style=""> <label id="TownCaption" style="font-size:24pt;margin:unset;"></label></span>
+            </div>
+
+        </div><hr color="lightgrey" width="270px" />
+        <div style="margin-top:20px;">
+            <div id="TemperatureContainer" style="display:inline-block;vertical-align:top;text-align:right;width:140px;padding-top:10px;font-size:45pt;">
+                <span id="HeaderTemp"></span>
+                <sup style="font-size:20pt;">°C</sup>
+            </div>
+            <div class="img_block" style="display:inline-block;">
+                <img id="WeatherImage" src="./image/undefined.jpg" style="width:100%;" />
+            </div>
+        </div>
+        <div id="sidebar" style="margin-top:20px;">
+            <div> &#128167 <span id="HumidityContainer"> Влажность: <span id="HeaderHumidity"> </span> %</span></div>
+            <div> <img src="./image/v.gif" style="width:20px; height:20px; " /> <span id="WindContainer">Скорость верта: <span id="HeaderWind"> </span> м/с</span></div>
+            <div> <img src="./image/g.gif" style="width:20px; height:20px; " /> <span id="PressureContainer"> Давление: <span id="HeaderPressure"> </span> мм. рт. ст.</span></div>
+        </div>
+    </div>
+    <div style="display:none;">
+        <!--<p> Выберите город</p>-->
+        <select id="City" onchange="changeCity();">
+            <option value="Moscow,ru" selected> Москва</option>
+            <option value="Saint Petersburg,ru"> С.Петербург</option>
+            <option value="Samara,ru"> Самара</option>
+            <option value="Volgograd,ru"> Волгоград</option>
+            <option value="Vladivostok,ru"> Владивосток</option>
+            <option value="Orel,ru"> Орёл</option>
+        </select>
+        <!--<button onclick="toNextCity();">Следующий город</button>
+        <div style="margin-top:20px;">
+            <label id="Output"> </label>
+        </div>-->
+        <!--<button id="action_handler">город</button>-->
+
+    </div>
+    <script>
+        const fadeInterval = 1000;
+        let myInterval = null;
+
+        $(document).ready(() => {
+            changeCity();
+            myInterval = setInterval(toNextCity, 7000);
+        });
+
+        function changeCity() {
+            let selected = $("#City option:selected");
+            let city = selected.val();
+            $.ajax({
+                method: "POST",
+                url: `http://openweathermap.org/data/2.5/weather/?q=${city}&appid=b6907d289e10d714a6e88b30761fae22`,
+                async: false,
+                success: function (result) {
+                    processSuccess(result, selected);
+                },
+                error: function () {
+                    resetWeather();
+                }
+            });
+        }
+
+        function processSuccess(result, Selected) {
+            weatherImage(result.weather[0].icon);
+            animateText1($("#header"), $("#TownCaption"), Selected.text());
+            animateText1($("#HumidityContainer"), $("#HeaderHumidity"), result.main.humidity);
+            animateText1($("#WindContainer"), $("#HeaderWind"), result.wind.speed);
+            animateText1($("#PressureContainer"), $("#HeaderPressure"), result.main.pressure);
+            Temperature(result.main.temp);
+            //
+            //$("#Output").text(JSON.stringify(result));
+        }
+
+        function Temperature(temp) {
+            let result = "";
+            let rounded = Math.round(temp);
+            if (+rounded > 0) result = "+";
+            result += rounded;
+            animateText($("#TemperatureContainer"), $("#HeaderTemp"), result);
+        }
+
+        function animateText(Container, Selected, Text) {
+            Container.fadeOut(fadeInterval, () => { Selected.text(Text) }).fadeIn(fadeInterval);
+        }
+
+        function animateText1(Container, Selected, Text) {
+            Container.slideToggle(fadeInterval);
+            Selected.text(Text);
+            Container.slideToggle(fadeInterval);
+        }
+
+        function weatherImage(img) {
+            $("#WeatherImage").fadeOut(fadeInterval, () => { $("#WeatherImage").attr("src", `./image/${img}.gif`); }).fadeIn(fadeInterval);
+        }
+
+        function resetWeather() {
+            $("#TownCaption").text("");
+            $("#HeaderPressure").text("");
+            $("#HeaderHumidity").text("");
+            $("#HeaderWind").text("");
+            $("#HeaderTemp").text("");
+            weatherImage("undefined");
+        }
+
+        function toNextCity() {
+            let Next = $("#City option:selected").prop("selected", false).next();
+            if (Next.is("#City option")) {
+                Next.prop("selected", true).trigger('change');
+            }
+            else {
+                $("#City option:first").prop("selected", true).trigger('change');
+            }
+            //        $("#action_handler").click(function(){
+            //        $("#action_element").fadeIn(600).animate({
+            //          opacity: 1.0,
+            //         height: "40px",
+            //         display:"toggle",
+            // },    { duration: 7000, queue: false });
+            //});
+        }
+    </script>
+    <!--<video width="270" height="280" poster="video/duel.jpg" autoplay loop>
+        <video>
+            <source src="widget.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' />
+        </video>-->
+    <!--<video src="widget.mp4"></video>-->
+    <span id="video">
+        <video width="260" height="270" autoplay="true" loop="true" muted="muted">
+            <source src="video/widget.webm" type='video/webm; codecs="vp8, vorbis"' />
+            <source src="video/widget.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' />
+            <source src="video/widget.ogv" type='video/ogg; codecs="theora, vorbis"' />
+            Video tag not supported. Download the video
+            <a href="video/widget.mp4">here</a>
+        </video>
+    </span>
+</body>
+</html>
+<!--appid=b6907d289e10d714a6e88b30761fae22-->
